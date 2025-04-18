@@ -6,27 +6,30 @@ let exchangeRates = {
   INR: 1
 };
 
+// Add new item to the invoice
 function addItem() {
   items.push({ name: '', qty: 1, rate: 0 });
   renderItems();
-  calculateTotals();
 }
 
+// Remove item from the invoice
 function removeItem(index) {
   items.splice(index, 1);
   renderItems();
   calculateTotals();
 }
 
+// Display all items in the table
 function renderItems() {
   const tbody = document.getElementById('invoice-items');
   tbody.innerHTML = '';
+  
   items.forEach((item, i) => {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td><input value="${item.name}" oninput="items[${i}].name=this.value" class="border w-full px-2 py-1 bg-gray-50 rounded-md"/></td>
-      <td><input type="number" value="${item.qty}" min="1" oninput="items[${i}].qty=this.value; calculateTotals()" class="border w-full px-2 py-1 bg-gray-50 rounded-md"/></td>
-      <td><input type="number" value="${item.rate}" oninput="items[${i}].rate=this.value; calculateTotals()" class="border w-full px-2 py-1 bg-gray-50 rounded-md"/></td>
+      <td><input type="number" value="${item.qty}" min="1" oninput="updateItem(${i}, 'qty', this.value)" class="border w-full px-2 py-1 bg-gray-50 rounded-md"/></td>
+      <td><input type="number" value="${item.rate}" oninput="updateItem(${i}, 'rate', this.value)" class="border w-full px-2 py-1 bg-gray-50 rounded-md"/></td>
       <td>${currencySymbol}${(item.qty * item.rate).toFixed(2)}</td>
       <td><button onclick="removeItem(${i})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-md text-xs">Remove</button></td>
     `;
@@ -34,28 +37,52 @@ function renderItems() {
   });
 }
 
+// Update item values and calculate immediately
+function updateItem(index, field, value) {
+  items[index][field] = parseFloat(value) || 0;
+  updateAmountDisplay(index);
+  calculateTotals();
+}
+
+// Update the amount display for a single item
+function updateAmountDisplay(index) {
+  const rows = document.getElementById('invoice-items').children;
+  if (rows[index]) {
+    const amountCell = rows[index].children[3];
+    amountCell.textContent = `${currencySymbol}${(items[index].qty * items[index].rate).toFixed(2)}`;
+  }
+}
+
+// Calculate all totals (subtotal, tax, total, balance)
 function calculateTotals() {
-  const subtotal = items.reduce((sum, i) => sum + i.qty * i.rate, 0);
-  const tax = 0; // customize later if needed
-  const paid = parseFloat(document.getElementById('paid').value || 0);
+  const subtotal = items.reduce((sum, item) => sum + (item.qty * item.rate), 0);
+  const tax = subtotal * 0.18; // 18% tax
+  const paid = parseFloat(document.getElementById('paid').value) || 0;
   const total = subtotal + tax;
   const balance = total - paid;
 
-  document.getElementById('subtotal').innerText = `${currencySymbol}${subtotal.toFixed(2)}`;
-  document.getElementById('tax').innerText = `${currencySymbol}${tax.toFixed(2)}`;
-  document.getElementById('total').innerText = `${currencySymbol}${total.toFixed(2)}`;
-  document.getElementById('balance').innerText = `${currencySymbol}${balance.toFixed(2)}`;
+  // Update the display
+  document.getElementById('subtotal').textContent = `${currencySymbol}${subtotal.toFixed(2)}`;
+  document.getElementById('tax').textContent = `${currencySymbol}${tax.toFixed(2)}`;
+  document.getElementById('total').textContent = `${currencySymbol}${total.toFixed(2)}`;
+  document.getElementById('balance').textContent = `${currencySymbol}${balance.toFixed(2)}`;
 }
 
+// Change currency and convert amounts
 function convertCurrency() {
   const selected = document.getElementById('currency').value;
   currencySymbol = selected === 'INR' ? '₹' : selected === 'USD' ? '$' : '€';
   const rate = exchangeRates[selected];
-  items.forEach(i => i.rate = (i.rate * rate).toFixed(2));
+  
+  items.forEach(item => {
+    item.rate = (item.rate * rate).toFixed(2);
+  });
+  
   renderItems();
   calculateTotals();
 }
 
+// Save invoice to localStorage
 function saveInvoice() {
   const invoice = {
     number: document.getElementById('invoiceNumber').value,
@@ -82,98 +109,77 @@ function saveInvoice() {
   alert("Invoice saved!");
 }
 
-function loadInvoice() {
-  const number = prompt("Enter Invoice Number to Load:");
-  const invoice = JSON.parse(localStorage.getItem(number));
-  if (!invoice) return alert("Invoice not found");
-
-  document.getElementById('invoiceNumber').value = invoice.number;
-  document.getElementById('billTo').value = invoice.billTo;
-  document.getElementById('shipTo').value = invoice.shipTo;
-  document.getElementById('date').value = invoice.date;
-  document.getElementById('dueDate').value = invoice.dueDate;
-  document.getElementById('terms').value = invoice.terms;
-  document.getElementById('notes').value = invoice.notes;
-  document.getElementById('termsText').value = invoice.termsText;
-  document.getElementById('currency').value = invoice.currency;
-  document.getElementById('paid').value = invoice.paid;
-  items = invoice.items;
-  convertCurrency();
-  renderItems();
-  calculateTotals();
-}
-
-function exportAllInvoices() {
-  let history = JSON.parse(localStorage.getItem('invoice-history') || '[]');
-  const allData = history.map(id => JSON.parse(localStorage.getItem(id)));
-  const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = "all_invoices.json";
-  a.click();
-}
-
-function showInvoiceHistory() {
-  const modal = document.getElementById('invoice-history-modal');
-  const list = document.getElementById('invoice-history-list');
-  list.innerHTML = '';
-  const history = JSON.parse(localStorage.getItem('invoice-history') || '[]');
-
-  history.forEach(id => {
-    const data = JSON.parse(localStorage.getItem(id));
-    const entry = document.createElement('div');
-    entry.className = "p-4 border rounded-md bg-gray-50";
-    entry.innerHTML = `
-      <div class="font-semibold text-indigo-700">Invoice: ${data.number}</div>
-      <div class="text-sm text-gray-700">Client: ${data.billTo} | Date: ${data.date} | Total: ${currencySymbol}${data.items.reduce((t, i) => t + i.qty * i.rate, 0).toFixed(2)}</div>
-    `;
-    list.appendChild(entry);
-  });
-
-  modal.classList.remove('hidden');
-}
-
+// Generate PDF of invoice
 function exportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
+  
+  // Add header
+  doc.setFontSize(18);
+  doc.text("INVOICE", 105, 20, { align: 'center' });
+  doc.setFontSize(12);
+  doc.text(`Invoice Number: ${document.getElementById('invoiceNumber').value}`, 15, 30);
+  doc.text(`Date: ${document.getElementById('date').value}`, 15, 40);
+  doc.text(`Bill To: ${document.getElementById('billTo').value}`, 15, 50);
 
-  doc.text("Invoice", 10, 10);
-  doc.text("Invoice Number: " + document.getElementById('invoiceNumber').value, 10, 20);
-  doc.text("Bill To: " + document.getElementById('billTo').value, 10, 30);
+  // Calculate totals
+  const subtotal = items.reduce((sum, item) => sum + (item.qty * item.rate), 0);
+  const tax = subtotal * 0.18;
+  const total = subtotal + tax;
 
-  const itemRows = items.map(i => [i.name, i.qty, i.rate, i.qty * i.rate]);
+  // Create table data
+  const itemRows = items.map(i => [
+    i.name,
+    i.qty,
+    `${currencySymbol}${i.rate.toFixed(2)}`,
+    `${currencySymbol}${(i.qty * i.rate).toFixed(2)}`
+  ]);
+
+  // Add items table
   doc.autoTable({
-    head: [["Item", "Qty", "Rate", "Amount"]],
+    head: [["Item", "Quantity", "Rate", "Amount"]],
     body: itemRows,
-    startY: 40
+    startY: 60,
+    theme: 'grid',
+    styles: { fontSize: 10 },
+    headStyles: { fillColor: [41, 128, 185], textColor: 255 }
   });
 
-  doc.save("invoice.pdf");
+  // Add totals
+  const finalY = doc.autoTable.previous.finalY + 10;
+  doc.setFontSize(12);
+  doc.text(`Subtotal: ${currencySymbol}${subtotal.toFixed(2)}`, 15, finalY);
+  doc.text(`Tax (18%): ${currencySymbol}${tax.toFixed(2)}`, 15, finalY + 10);
+  doc.text(`Total: ${currencySymbol}${total.toFixed(2)}`, 15, finalY + 20);
+  doc.text(`Balance Due: ${currencySymbol}${(total - document.getElementById('paid').value).toFixed(2)}`, 15, finalY + 30);
+
+  // Save PDF
+  doc.save(`invoice-${document.getElementById('invoiceNumber').value}.pdf`);
 }
 
+// Placeholder for email function
 function sendEmail() {
   alert("Email functionality requires backend server integration (e.g., Node.js with SMTP).");
 }
 
-// Function to enhance date inputs with better date picker styling
+// Show invoice history in new tab
+function showInvoiceHistory() {
+  window.open('invoice-history.html', '_blank');
+}
+
+// Initialize date pickers with default values
 function enhanceDatePickers() {
-  // Get the date input elements
   const dateInputs = document.querySelectorAll('input[type="date"]');
   
-  // Apply custom styling to each date input
   dateInputs.forEach(input => {
-    // Add event listener to improve user experience
     input.addEventListener('focus', function() {
-      // Set default date if empty
       if (!this.value) {
         const today = new Date();
-        const formattedDate = today.toISOString().substr(0, 10);
-        this.value = formattedDate;
+        this.value = today.toISOString().substr(0, 10);
       }
     });
   });
   
-  // Set default dates
   const dateInput = document.getElementById('date');
   const dueDateInput = document.getElementById('dueDate');
   
@@ -185,12 +191,25 @@ function enhanceDatePickers() {
   if (!dueDateInput.value) {
     const today = new Date();
     const dueDate = new Date(today);
-    dueDate.setDate(today.getDate() + 30); // Default to NET-30
+    dueDate.setDate(today.getDate() + 30);
     dueDateInput.value = dueDate.toISOString().substr(0, 10);
   }
 }
 
-// Call this function when the page loads
+// Generate invoice number
+function generateInvoiceNumber() {
+  const last = parseInt(localStorage.getItem('lastInvoiceNumber') || '1000', 10);
+  const next = last + 1;
+  localStorage.setItem('lastInvoiceNumber', next);
+  document.getElementById("invoiceNumber").value = 'INV-' + next;
+}
+
+// Initialize when page loads
 window.addEventListener('DOMContentLoaded', function() {
   enhanceDatePickers();
+  generateInvoiceNumber();
 });
+
+// Make functions available globally
+window.printInvoice = printInvoice;
+window.deleteInvoice = deleteInvoice;

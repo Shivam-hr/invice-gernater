@@ -118,3 +118,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .remove-btn:hover {
   background-color: #dc2626;
 }
+#invoice-history-modal {
+  background-color: rgba(0, 0, 0, 0.5);
+}

@@ -133,8 +133,7 @@
       <button onclick="exportPDF()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold shadow-md">Download PDF</button>
       <button onclick="sendEmail()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold shadow-md">Send Email</button>
       <button onclick="saveInvoice()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded-xl font-semibold shadow-md">Save Invoice</button>
-      <button onclick="loadInvoice()" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-xl font-semibold shadow-md">Load Invoice</button>
-      <button onclick="exportAllInvoices()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-semibold shadow-md">Export All (JSON)</button>
+     
       <button onclick="showInvoiceHistory()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-semibold shadow-md">View Invoice History</button>
 
       <!-- Currency -->
@@ -150,7 +149,7 @@
       <!-- Totals -->
       <div class="border-t pt-4 space-y-3 text-sm">
         <div class="flex justify-between font-medium text-gray-700"><span>Subtotal</span><span id="subtotal">₹0.00</span></div>
-        <div class="flex justify-between font-medium text-gray-700"><span>Tax (0%)</span><span id="tax">₹0.00</span></div>
+        <div class="flex justify-between font-medium text-gray-700"><span>Tax (18%)</span><span id="tax">₹0.00</span></div>
         <div class="flex justify-between font-bold text-xl text-gray-800"><span>Total</span><span id="total">₹0.00</span></div>
         <div class="flex justify-between items-center font-medium text-gray-700">
           <span>Paid</span>
@@ -161,14 +160,9 @@
     </div>
   </div>
 
-  <!-- Invoice History Modal -->
-  <div id="invoice-history-modal" class="fixed inset-0 hidden justify-center items-center z-50">
-    <div class="bg-white rounded-xl shadow-xl p-6 max-w-3xl w-full relative">
-      <button onclick="document.getElementById('invoice-history-modal').classList.add('hidden')" class="absolute top-2 right-2 text-gray-500 hover:text-black text-2xl">&times;</button>
-      <h2 class="text-xl font-bold mb-4">Invoice History</h2>
-      <div id="invoice-history-list" class="space-y-4 max-h-[60vh] overflow-y-auto"></div>
-    </div>
-  </div>
+  
+
+  <div class="flex justify-between font-medium text-gray-700"><span>Tax (18%)</span><span id="tax">₹0.00</span></div>
 
   <!-- Link to JavaScript -->
   <script src="app.js"></script>
